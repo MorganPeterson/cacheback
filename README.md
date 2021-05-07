@@ -14,7 +14,7 @@ Dependencies
 Usage
 ===========
 
-Copy CacheBack.fnl where where your libraries are.
+Copy CacheBack.fnl to where your libraries are
 ```fennel
 (local cacheback (require :CacheBack)
 ```
@@ -24,7 +24,8 @@ Copy CacheBack.fnl where where your libraries are.
 (local cbdb (cacheback './db'))
 ```
 
-2. If there is no pages(file/table) in your directory(database), create one
+2. If there are no pages(file/table) in your directory(database) create one<br>
+otherwise load existing page
 ```fennel
 (if (not (. cbdb :page))
   (tset cbdb :page {}))
