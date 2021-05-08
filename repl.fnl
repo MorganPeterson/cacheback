@@ -16,6 +16,11 @@
 ;; repl.fnl
 ;; https://github.com/MorganPeterson/cacheback
 
+(local signal (require :posix.signal))
+
+(fn signal-handler [signum]
+  (os.exit (+ 128 (or signum 0))))
+
 (fn new [options]
   (let [mt options
         inputBuffer {:buffer nil :bufferLength 0 :inputLength 0}
@@ -31,11 +36,16 @@
                         (tset inputBuffer
                               :inputLength
                               (. inputBuffer :bufferLength))))
-    (tset inputBuffer :run (fn [] 
-      (while true
-        (inputBuffer.read-input)
-        (match (. inputBuffer :buffer)
-          ".exit" (os.exit 0)))))
+    (tset inputBuffer :run (fn []
+                             (signal.signal signal.SIGINT signal-handler)
+                             (signal.signal signal.SIGKILL signal-handler)
+                             (signal.signal signal.SIGQUIT signal-handler)
+                             (signal.signal signal.SIGSTOP signal-handler)
+                             (signal.signal signal.SIGTERM signal-handler)
+                             (while true
+                               (inputBuffer.read-input)
+                               (match (. inputBuffer :buffer)
+                                 ".exit" (os.exit 0)))))
     (setmetatable inputBuffer mt)
     inputBuffer))
 
