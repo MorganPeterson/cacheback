@@ -64,11 +64,11 @@
 ;; metatable
 (local mt {
            :__index (fn [db k]
-                      (if (. dbFuncs k)
-                        (. dbFuncs k))
-                      (if (exists (.. (. pool db) "/" k) :regular)
-                        (tset db k (load-page (.. (. pool db) "/" k))))
-                      (rawget db k))})
+                     (if (. dbFuncs k)
+                       (. dbFuncs k))
+                     (when (exists (.. (. pool db) "/" k) :regular)
+                         (tset db k (load-page (.. (. pool db) "/" k))))
+                     (rawget db k))})
 
 ;; set utility functions to pool
 (tset pool :utils dbFuncs)
