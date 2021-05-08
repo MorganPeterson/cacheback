@@ -19,42 +19,30 @@
 (local messagepack (require :MessagePack))
 (local posix (require :posix))
 
-(fn file-exists [path]
-  "test if a file exists"
+(fn exists [path posixType]
+  "checks if a posix defined location exists"
   (let [stat (posix.stat path)]
-    (and (~= stat nil) (= (assert (. stat :type)) "regular"))))
-
-(fn directory-exists [path]
-  "test if a directory exists"
-  (let [stat (posix.stat path)]
-    (and (~= stat nil) (= (. stat :type) "directory"))))
-
-(fn pack-file [fp page]
-  "use message pack to create binary file"
-  (fp:write (messagepack.pack page))
-  (fp:close)
-  true)
-
-(fn unpack-file [fp]
-  "use message pack to unpack a binary file"
-  (let [content (messagepack.unpack (fp:read "*a"))]
-	(fp:close)
-    content))
+    (and (~= stat nil) (= (assert (. stat :type)) posixType))))
 
 (fn load-page [path]
   "Read a db page and unpack it if it exists"
   (let [fp (io.open path "rb")]
-    (if (~= fp nil)
-      (unpack-file fp))))
+    (when fp
+      (let [content (messagepack.unpack (fp:read "*a"))]
+        (fp:close)
+        content))))
 
 (fn save-page [path page]
   "pack a db page and save it to a file"
   (if (= (type page) "table")
     (let [fp (io.open path "wb")]
-      (if (~= nil fp)
-        (pack-file fp page)
-        false))
-    false))
+      (if fp
+        (do
+          (fp:write (messagepack.pack page))
+          (fp:close)
+          true)
+        false)))
+    false)
 
 ;; our pool table for export
 (local pool {})
@@ -78,7 +66,7 @@
            :__index (fn [db k]
                       (if (. dbFuncs k)
                         (. dbFuncs k))
-                      (if (file-exists (.. (. pool db) "/" k))
+                      (if (exists (.. (. pool db) "/" k) :regular)
                         (tset db k (load-page (.. (. pool db) "/" k))))
                       (rawget db k))})
 
@@ -89,7 +77,7 @@
 (setmetatable pool {
                     :__mode "kv"
                     :__call (fn [pool path]
-                              (assert (directory-exists path)
+                              (assert (exists path :directory)
                                       (.. path " is not a directory"))
                               (if (. pool path) (. pool path))
                               (let [db {}]
